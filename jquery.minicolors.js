@@ -119,6 +119,66 @@ if(jQuery) (function($) {
 		}
 	});
 	
+	//create HSV circle by canvas
+	function HSVcircle(canvasElem, canvasCtx) {
+		var imgData = canvasCtx.getImageData(0, 0, canvasElem.width, canvasElem.height);
+		var pix = imgData.data;
+
+		var centerX = canvasElem.width / 2;
+		var centerY = canvasElem.height / 2;
+
+		var circleRadius = Math.floor(Math.min(canvasElem.width, canvasElem.height) / 2) -1;
+
+		var color = {r:0,g:0,b:0,alpha:0};
+		
+		for (var y = 0; y < canvasElem.height; y++) {
+			for (var x = 0; x < canvasElem.width; x++) {
+				var dx = x - centerX;
+				var dy = y - centerY;
+
+				var pointRadius = Math.sqrt(square(dx) + square(dy));   // Radius of the point
+				var pointAngle = 180 * Math.atan2(dy, dx) / Math.PI;    // Angle of the point (in degree)
+
+				if (pointRadius <= circleRadius+1) {
+					var h = pointAngle+180;
+					var s, alpha;
+
+					if (pointRadius <= circleRadius) {
+						// The point is in the circle, the saturation
+						// depends on the radius of the point.
+						s = pointRadius / circleRadius;
+						alpha = 255;
+					} else {
+						// The point is out of the circle by 1 unit.
+						// This is used for the "antialias" effect.
+						s = 1;
+						alpha = (1 - (pointRadius - circleRadius)) * 255;
+					}
+					
+					color = hsv2rgba(h, s, 1, alpha);
+					//color.setFromHSV(h, s, 1, alpha);
+				} else {
+					// The point is completely out of the circle.
+					// This is used to draw a fully transparent pixel.
+					color = {r:0,g:0,b:0,alpha:0};
+				}
+
+				var pixIdx = (y * canvasElem.width + x) * 4;
+
+				pix[pixIdx+0] = color.r;
+				pix[pixIdx+1] = color.g;
+				pix[pixIdx+2] = color.b;
+				pix[pixIdx+3] = color.alpha;
+			}
+		}
+
+		canvasCtx.putImageData(imgData, 0, 0);
+	}
+
+	function square(n) {
+		return n*n;
+	}
+	
 	// Initialize input elements
 	function init(input, settings) {
 		
@@ -145,6 +205,31 @@ if(jQuery) (function($) {
 			});
 		}
 		
+		
+		
+		
+		
+		var html = 	'<span class="minicolors-panel minicolors-slider-' + settings.control + '">' + 
+					'<span class="minicolors-slider">' + 
+						'<span class="minicolors-picker"></span>' +
+					'</span>' + 
+					'<span class="minicolors-opacity-slider">' + 
+						'<span class="minicolors-picker"></span>' +
+					'</span>';
+			
+		if(settings.control == 'wheel') {
+			html += '<canvas class="minicolors-canvas" width="'+(150*settings.zoom)+'" height="'+(150*settings.zoom)+'" style="zoom:'+(1/settings.zoom)+';"></canvas>';
+			html += '<span class="minicolors-grid" style="background: none;">';					
+		} else {
+			html += '<span class="minicolors-grid">';
+		}
+		
+		html += '<span class="minicolors-grid-inner"></span>' +
+				'<span class="minicolors-picker"><span>'+	
+				'</span></span>' +
+				'</span>' +
+				'</span>';
+				
 		// The input
 		input
 			.addClass('minicolors-input')
@@ -153,24 +238,23 @@ if(jQuery) (function($) {
 			.prop('size', 7)
 			.prop('maxlength', 7)
 			.wrap(minicolors)
-			.after(
-				'<span class="minicolors-panel minicolors-slider-' + settings.control + '">' + 
-					'<span class="minicolors-slider">' + 
-						'<span class="minicolors-picker"></span>' +
-					'</span>' + 
-					'<span class="minicolors-opacity-slider">' + 
-						'<span class="minicolors-picker"></span>' +
-					'</span>' +
-					'<span class="minicolors-grid">' +
-						'<span class="minicolors-grid-inner"></span>' +
-						'<span class="minicolors-picker"><span></span></span>' +
-					'</span>' +
-				'</span>'
-			);
+			.after(html);
 		
 		// Prevent text selection in IE
-		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end().css('zoom',settings.zoom);
+		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end().css('zoom', settings.zoom);
 		
+		//create HSV circle by canvas
+		if(settings.control == 'wheel') {
+			var canvasElem = input.parent().find('.minicolors-canvas')[0];
+			if (canvasElem.getContext) {
+				canvasCtx = canvasElem.getContext("2d");
+				HSVcircle(canvasElem, canvasCtx); 
+			} else {
+				console.log("The <canvas> tag is NOT supported on your browser!");
+				alert('The <canvas> tag is NOT supported on your browser!');
+				input.parent().find('.minicolors-grid').css('background','');
+			}
+		}
 		
 		// Detect swatch position
 		if( settings.swatchPosition === 'left' ) {
@@ -761,6 +845,38 @@ if(jQuery) (function($) {
 		hsb.b *= 100/255;
 		return hsb;
 	}
+	
+	
+	function hsv2rgba(h, s, v, alpha) {
+		h = h % 360;
+
+		if (h < 0) {
+			h += 360;
+		}
+
+		var c = v * s;
+		var h1 = h / 60;
+		var x = c * (1 - Math.abs(h1%2 - 1));
+		var r1 = 0, g1 = 0, b1 = 0;
+
+		switch (Math.floor(h1)) {
+		case 0: r1 = c; g1 = x; b1 = 0; break;
+		case 1: r1 = x; g1 = c; b1 = 0; break;
+		case 2: r1 = 0; g1 = c; b1 = x; break;
+		case 3: r1 = 0; g1 = x; b1 = c; break;
+		case 4: r1 = x; g1 = 0; b1 = c; break;
+		case 5: r1 = c; g1 = 0; b1 = x; break;
+		}
+
+		var m = v - c;
+
+		return {
+			r: Math.floor((r1 + m) * 255),
+			g: Math.floor((g1 + m) * 255),
+			b: Math.floor((b1 + m) * 255),
+			alpha: alpha
+		};
+	};
 	
 	// Converts a hex string to an RGB object
 	function hex2rgb(hex) {
