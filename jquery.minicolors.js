@@ -252,11 +252,11 @@ if(jQuery) (function($) {
 		var slider = input.parent().find('.minicolors-slider');
 		var sliderpicker = slider.find('[class$=-picker]');
 		
-		sliderpicker.css('width', ((zoom * 20)-2) + 'px').css('height', zoom * 2 + 'px').css('opacity','0.8').css('border-radius', zoom * 4 + 'px');		
+		sliderpicker.css('width', ((zoom * 20)-2) + 'px').css('height', zoom * 2 + 'px').css('opacity','0.8').css('border-radius', zoom * 4 + 'px').css('margin-top','-' +  zoom + 'px');		
 		
 		var grid = input.parent().find('.minicolors-grid');
 		gridpicker = grid.find('[class$=-picker]');
-		gridpicker.css('width', zoom * 10 + 'px').css('height', zoom * 10 + 'px').css('border-radius', zoom * 6 + 'px');
+		gridpicker.css('width', zoom * 10 + 'px').css('height', zoom * 10 + 'px').css('border-radius', zoom * 6 + 'px').css('margin-top','-' +  zoom * 5.5 + 'px').css('margin-left','-' +  zoom * 5.5 + 'px');
 		gridpicker.find('span').css('width', ((zoom * 10)-4) + 'px').css('height', ((zoom * 10)-4) + 'px').css('border-radius', zoom * 6 + 'px');
 		
 				
@@ -377,7 +377,7 @@ if(jQuery) (function($) {
 			y = Math.round((event.pageY - offsetY)),
 			duration = animate ? settings.animationSpeed : 0,
 			wx, wy, r, phi;
-			
+		
 		// Touch support
 		if( event.originalEvent.changedTouches ) {
 			x = Math.round((event.originalEvent.changedTouches[0].pageX - offsetX));
@@ -407,7 +407,9 @@ if(jQuery) (function($) {
 			x = Math.round(x);
 			y = Math.round(y);
 		}
-		
+				
+				
+				
 		// Move the picker
 		if( target.is('.minicolors-grid') ) {
 			picker
@@ -634,9 +636,10 @@ if(jQuery) (function($) {
 			
 			case 'wheel':
 				var halfsize = 75 * settings.zoom;
-			
+				var fullsize = 150 * settings.zoom;
+				
 				// Set grid position
-				r = keepWithin(Math.ceil(hsb.s * 0.75), 0, grid.height() / 2);
+				r = keepWithin(Math.ceil(hsb.s * (halfsize/100)), 0, grid.height() / 2);
 				phi = hsb.h * Math.PI / 180;
 				x = keepWithin(halfsize - Math.cos(phi) * r, 0, grid.width());
 				y = keepWithin(halfsize - Math.sin(phi) * r, 0, grid.height());
@@ -646,7 +649,7 @@ if(jQuery) (function($) {
 				});
 				
 				// Set slider position
-				y = 150 - (hsb.b / (100 / grid.height()));
+				y = fullsize - (hsb.b / (100 / grid.height()));
 				if( hex === '' ) y = 0;
 				sliderPicker.css('top', y + 'px');
 				
@@ -660,7 +663,7 @@ if(jQuery) (function($) {
 			
 			case 'saturation':
 				// Set grid position
-				x = keepWithin((5 * hsb.h) / 12, 0, 150);
+				x = keepWithin((5 * hsb.h) / 12, 0, fullsize);
 				y = keepWithin(grid.height() - Math.ceil(hsb.b / (100 / grid.height())), 0, grid.height());
 				gridPicker.css({
 					top: y + 'px',
@@ -679,7 +682,7 @@ if(jQuery) (function($) {
 			
 			case 'brightness':
 				// Set grid position
-				x = keepWithin((5 * hsb.h) / 12, 0, 150);
+				x = keepWithin((5 * hsb.h) / 12, 0, fullsize);
 				y = keepWithin(grid.height() - Math.ceil(hsb.s / (100 / grid.height())), 0, grid.height());
 				gridPicker.css({
 					top: y + 'px',
