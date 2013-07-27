@@ -28,7 +28,8 @@ if(jQuery) (function($) {
 			showSpeed: 100,
 			swatchPosition: 'left',
 			textfield: true,
-			theme: 'default'
+			theme: 'default',
+			zoom: 1
 		}
 	};
 	
@@ -168,7 +169,8 @@ if(jQuery) (function($) {
 			);
 		
 		// Prevent text selection in IE
-		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end();
+		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end().css('zoom',settings.zoom);
+		
 		
 		// Detect swatch position
 		if( settings.swatchPosition === 'left' ) {
@@ -261,29 +263,30 @@ if(jQuery) (function($) {
 	
 	// Moves the selected picker
 	function move(target, event, animate) {
-		
+				
 		var input = target.parents('.minicolors').find('.minicolors-input'),
 			settings = input.data('minicolors-settings'),
 			picker = target.find('[class$=-picker]'),
-			offsetX = target.offset().left,
-			offsetY = target.offset().top,
-			x = Math.round(event.pageX - offsetX),
-			y = Math.round(event.pageY - offsetY),
+			zoom = settings.zoom,
+			offsetX = target.offset().left*zoom,
+			offsetY = target.offset().top*zoom,
+			x = Math.round((event.pageX - offsetX))/zoom,
+			y = Math.round((event.pageY - offsetY))/zoom,
 			duration = animate ? settings.animationSpeed : 0,
 			wx, wy, r, phi;
 			
-		
+			
 		// Touch support
 		if( event.originalEvent.changedTouches ) {
-			x = event.originalEvent.changedTouches[0].pageX - offsetX;
-			y = event.originalEvent.changedTouches[0].pageY - offsetY;
+			x = Math.round((event.originalEvent.changedTouches[0].pageX - offsetX)/zoom);
+			y = Math.round((event.originalEvent.changedTouches[0].pageY - offsetY)/zoom);
 		}
 		
 		// Constrain picker to its container
 		if( x < 0 ) x = 0;
 		if( y < 0 ) y = 0;
-		if( x > target.width() ) x = target.width();
-		if( y > target.height() ) y = target.height();
+		if( x > (target.width()) ) x = (target.width());
+		if( y > (target.height()) ) y = (target.height());		
 		
 		// Constrain color wheel values to the wheel
 		if( target.parent().is('.minicolors-slider-wheel') && picker.parent().is('.minicolors-grid') ) {
