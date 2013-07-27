@@ -203,11 +203,7 @@ if(jQuery) (function($) {
 			$.each(settings.position.split(' '), function() {
 				minicolors.addClass('minicolors-position-' + this);
 			});
-		}
-		
-		
-		
-		
+		}		
 		
 		var html = 	'<span class="minicolors-panel minicolors-slider-' + settings.control + '">' + 
 					'<span class="minicolors-slider">' + 
@@ -216,9 +212,11 @@ if(jQuery) (function($) {
 					'<span class="minicolors-opacity-slider">' + 
 						'<span class="minicolors-picker"></span>' +
 					'</span>';
-			
+		
+		var zoom = settings.zoom;
+		
 		if(settings.control == 'wheel') {
-			html += '<canvas class="minicolors-canvas" width="'+(150*settings.zoom)+'" height="'+(150*settings.zoom)+'" style="zoom:'+(1/settings.zoom)+';"></canvas>';
+			html += '<canvas class="minicolors-canvas" width="'+(150*zoom)+'" height="'+(150*zoom)+'"></canvas>'; //style="zoom:'+(1/settings.zoom)+';"
 			html += '<span class="minicolors-grid" style="background: none;">';					
 		} else {
 			html += '<span class="minicolors-grid">';
@@ -241,8 +239,28 @@ if(jQuery) (function($) {
 			.after(html);
 		
 		// Prevent text selection in IE
-		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end().css('zoom', settings.zoom);
+		input.parent().find('.minicolors-panel').on('selectstart', function() { return false; }).end(); //.css('zoom', settings.zoom);
+				
+		input.parent().find('.minicolors-panel').css('width', zoom * 173 + 'px').css('height', zoom * 152 + 'px');
 		
+		input.parent().find('.minicolors-grid').css('width', zoom * 150 + 'px').css('height', zoom * 150 + 'px');
+		input.parent().find('.minicolors-grid-inner').css('width', zoom * 150 + 'px').css('height', zoom * 150 + 'px')
+				
+		input.parent().find('.minicolors-slider').css('width', zoom * 20 + 'px').css('height', zoom * 150 + 'px').css('left', ((zoom * 150)+2) + 'px');
+		input.parent().find('.minicolors-opacity-slider').css('width', zoom * 20 + 'px').css('height', zoom * 150 + 'px').css('left', ((zoom * 150)+2) + 'px')
+		
+		var slider = input.parent().find('.minicolors-slider');
+		var sliderpicker = slider.find('[class$=-picker]');
+		
+		sliderpicker.css('width', ((zoom * 20)-2) + 'px').css('height', zoom * 2 + 'px').css('opacity','0.8').css('border-radius', zoom * 4 + 'px');		
+		
+		var grid = input.parent().find('.minicolors-grid');
+		gridpicker = grid.find('[class$=-picker]');
+		gridpicker.css('width', zoom * 10 + 'px').css('height', zoom * 10 + 'px').css('border-radius', zoom * 6 + 'px');
+		gridpicker.find('span').css('width', ((zoom * 10)-4) + 'px').css('height', ((zoom * 10)-4) + 'px').css('border-radius', zoom * 6 + 'px');
+		
+				
+				
 		//create HSV circle by canvas
 		if(settings.control == 'wheel') {
 			var canvasElem = input.parent().find('.minicolors-canvas')[0];
@@ -345,6 +363,7 @@ if(jQuery) (function($) {
 		});
 	}
 	
+	
 	// Moves the selected picker
 	function move(target, event, animate) {
 				
@@ -352,18 +371,17 @@ if(jQuery) (function($) {
 			settings = input.data('minicolors-settings'),
 			picker = target.find('[class$=-picker]'),
 			zoom = settings.zoom,
-			offsetX = target.offset().left*zoom,
-			offsetY = target.offset().top*zoom,
-			x = Math.round((event.pageX - offsetX))/zoom,
-			y = Math.round((event.pageY - offsetY))/zoom,
+			offsetX = Math.round(target.offset().left),
+			offsetY = Math.round(target.offset().top),
+			x = Math.round((event.pageX - offsetX)),
+			y = Math.round((event.pageY - offsetY)),
 			duration = animate ? settings.animationSpeed : 0,
 			wx, wy, r, phi;
 			
-			
 		// Touch support
 		if( event.originalEvent.changedTouches ) {
-			x = Math.round((event.originalEvent.changedTouches[0].pageX - offsetX)/zoom);
-			y = Math.round((event.originalEvent.changedTouches[0].pageY - offsetY)/zoom);
+			x = Math.round((event.originalEvent.changedTouches[0].pageX - offsetX));
+			y = Math.round((event.originalEvent.changedTouches[0].pageY - offsetY));
 		}
 		
 		// Constrain picker to its container
@@ -372,17 +390,19 @@ if(jQuery) (function($) {
 		if( x > (target.width()) ) x = (target.width());
 		if( y > (target.height()) ) y = (target.height());		
 		
+		var halfsize = 75 * zoom;
+		
 		// Constrain color wheel values to the wheel
 		if( target.parent().is('.minicolors-slider-wheel') && picker.parent().is('.minicolors-grid') ) {
-			wx = 75 - x;
-			wy = 75 - y;
+			wx = halfsize - x;
+			wy = halfsize - y;
 			r = Math.sqrt(wx * wx + wy * wy);
 			phi = Math.atan2(wy, wx);
 			if( phi < 0 ) phi += Math.PI * 2;
-			if( r > 75 ) {
-				r = 75;
-				x = 75 - (75 * Math.cos(phi));
-				y = 75 - (75 * Math.sin(phi));
+			if( r > halfsize ) {
+				r = halfsize;
+				x = halfsize - (halfsize * Math.cos(phi));
+				y = halfsize - (halfsize * Math.sin(phi));
 			}
 			x = Math.round(x);
 			y = Math.round(y);
@@ -460,16 +480,18 @@ if(jQuery) (function($) {
 			switch(settings.control) {
 				
 				case 'wheel':
+					var halfsize = 75 * settings.zoom;
+					
 					// Calculate hue, saturation, and brightness
 					x = (grid.width() / 2) - gridPos.x;
 					y = (grid.height() / 2) - gridPos.y;
 					r = Math.sqrt(x * x + y * y);
 					phi = Math.atan2(y, x);
 					if( phi < 0 ) phi += Math.PI * 2;
-					if( r > 75 ) {
-						r = 75;
-						gridPos.x = 69 - (75 * Math.cos(phi));
-						gridPos.y = 69 - (75 * Math.sin(phi));
+					if( r > halfsize ) {
+						r = halfsize;
+						gridPos.x = 69 - (halfsize * Math.cos(phi));
+						gridPos.y = 69 - (halfsize * Math.sin(phi));
 					}
 					saturation = keepWithin(r / 0.75, 0, 100);
 					hue = keepWithin(phi * 180 / Math.PI, 0, 360);
@@ -481,7 +503,8 @@ if(jQuery) (function($) {
 					});
 					
 					// Update UI
-					slider.css('backgroundColor', hsb2hex({ h: hue, s: saturation, b: 100 }));
+					//slider.css('backgroundColor', hsb2hex({ h: hue, s: saturation, b: 100 }));
+					slider.css('background', '-webkit-gradient(linear, left top, left bottom, from(' + hsb2hex({ h: hue, s: saturation, b: 100 }) + '), to(#000))');
 					break;
 				
 				case 'saturation':
@@ -610,11 +633,13 @@ if(jQuery) (function($) {
 		switch(settings.control) {
 			
 			case 'wheel':
+				var halfsize = 75 * settings.zoom;
+			
 				// Set grid position
 				r = keepWithin(Math.ceil(hsb.s * 0.75), 0, grid.height() / 2);
 				phi = hsb.h * Math.PI / 180;
-				x = keepWithin(75 - Math.cos(phi) * r, 0, grid.width());
-				y = keepWithin(75 - Math.sin(phi) * r, 0, grid.height());
+				x = keepWithin(halfsize - Math.cos(phi) * r, 0, grid.width());
+				y = keepWithin(halfsize - Math.sin(phi) * r, 0, grid.height());
 				gridPicker.css({
 					top: y + 'px',
 					left: x + 'px'
@@ -626,7 +651,11 @@ if(jQuery) (function($) {
 				sliderPicker.css('top', y + 'px');
 				
 				// Update panel color
-				slider.css('backgroundColor', hsb2hex({ h: hsb.h, s: hsb.s, b: 100 }));
+				//slider.css('backgroundColor', hsb2hex({ h: hsb.h, s: hsb.s, b: 100 }));
+				
+				//slider.css('backgroundColor', hsb2hex({ h: hsb.h, s: hsb.s, b: 100 }));	
+				//slider.css('background', '-moz-linear-gradient(0% 6% 270deg, #000000, ' + hsb2hex({ h: hsb.h, s: hsb.s, b: 100 }) + ') repeat scroll 0 0 transparent');
+				slider.css('background', '-webkit-gradient(linear, left top, left bottom, from(' + hsb2hex({ h: hsb.h, s: hsb.s, b: 100 }) + '), to(#000))');
 				break;
 			
 			case 'saturation':
